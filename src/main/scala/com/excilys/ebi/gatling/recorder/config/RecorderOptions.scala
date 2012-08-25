@@ -15,7 +15,7 @@
  */
 package com.excilys.ebi.gatling.recorder.config
 
-case class Options(
+class RecorderOptions(
 	var localPort: Option[Int] = None,
 	var localPortSsl: Option[Int] = None,
 	var proxyHost: Option[String] = None,
