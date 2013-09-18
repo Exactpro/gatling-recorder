@@ -15,13 +15,16 @@
  */
 package io.gatling.recorder.util
 
-import io.gatling.recorder.config.RecorderConfiguration.configuration
+object URIHelper {
 
-object RedirectHelper {
+	def splitURI(uri: String) = {
+		val slashes = uri.zipWithIndex.filter(_._1 == '/')
+		val schemeHostPort = slashes.lift(2).map { case (_, index) => uri.substring(0, index) }.getOrElse(uri)
+		val pathQuery = if (uri.length > schemeHostPort.length)
+			uri.substring(schemeHostPort.length)
+		else
+			"/"
 
-	val redirectCodes = Seq(301, 302, 303)
-
-	def isRedirectCode(code: Int) = redirectCodes.contains(code)
-
-	def isRequestRedirect(currentStatus: Int): Boolean = configuration.http.followRedirect && isRedirectCode(currentStatus)
+		(schemeHostPort, pathQuery)
+	}
 }
