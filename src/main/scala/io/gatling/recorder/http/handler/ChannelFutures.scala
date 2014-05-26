@@ -21,6 +21,6 @@ import org.jboss.netty.channel.ChannelFuture
 object ChannelFutures {
 
   implicit def function2ChannelFutureListener(thunk: ChannelFuture => Any) = new ChannelFutureListener {
-    def operationComplete(future: ChannelFuture) { thunk(future) }
+    def operationComplete(future: ChannelFuture): Unit = thunk(future)
   }
 }
