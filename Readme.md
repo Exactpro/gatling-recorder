@@ -12,4 +12,5 @@ git push -u origin standalone
 EoR
 ```
 
-With current build.sbt I can run _sbt compile_ but not _sbt test_ (io.gatling.BaseSpec etc.)
+I had to compose build.sbt and copy BaseSpec (commit e259eb8). 
+Now I can run _sbt compile_, _sbt test_, and start Recorder from IDE.
