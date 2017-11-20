@@ -3,6 +3,9 @@ name := "gatling-recorder-standalone"
 version := "3.0.0-SNAPSHOT"
 
 scalaVersion := "2.12.4"
+
+resolvers += 
+  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
         
 libraryDependencies ++= Seq(
   "io.gatling" % "gatling-core"    % "3.0.0-SNAPSHOT",
