@@ -1,0 +1,26 @@
+2018.07.30 [standalone 007513a65] sync to upstream dfc7413 (2018-07-20)
+dfc74135c Ignore case and h2 pseudo headers when filtering headers
+405246f84 nit
+b298b1f3c Refactor ResponseProcessor + ResourceFetcher, close #3489
+69dc56e07 nit
+6dda9e6c7 No need for a second capture group
+2beba00e8 nit
+1a47e63a8 Fix recorder headers handling
+394bcd5de Optimize default HTTP check
+518509944 Drop ClockSingleton, inject it instead
+cab8e8e68 Initial take at replacing AsyncHttpClient with own HTTP client
+76663e779 Make RecorderPropertiesBuilder fluent
+d69a52802 Rename Recorder's "outputFolder" option into "simulationsFolder", close #3435
+8aff2ada7 Rename bodies option into resources, close #3434
+416a3f58d HAR postData's mimeType is not mandatory, close #3433
+55e277eb6 Upgrade ahc 2.4.0
+11ff587ef Upgrade ahc 2.2.0, jodd 4.1.0, switch to Array[Char] for parsing HTML and JSON
+9597b67b0 Always handle header names and values as case insensitive, close #3390
+62340816e Update copyright year
+57f889601 Drop bodies and data directories, close #3398
+ [prev. sync]
+53cfc657a Add new line after file header (as of latest sbt header plugin)
+ [upstream initial import]
+3d47303b0 Fix license file headers, not javadoc
+6e2daae09 Fix case recorder
+
