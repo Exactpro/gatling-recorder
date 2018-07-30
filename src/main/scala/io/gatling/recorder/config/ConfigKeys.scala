@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ private[recorder] object ConfigKeys {
   object core {
     val Mode = "recorder.core.mode"
     val Encoding = "recorder.core.encoding"
-    val SimulationOutputFolder = "recorder.core.outputFolder"
-    val BodiesFolder = "recorder.core.bodiesFolder"
+    val SimulationsFolder = "recorder.core.simulationsFolder"
+    val ResourcesFolder = "recorder.core.resourcesFolder"
     val Package = "recorder.core.package"
     val ClassName = "recorder.core.className"
     val ThresholdForPauseCreation = "recorder.core.thresholdForPauseCreation"

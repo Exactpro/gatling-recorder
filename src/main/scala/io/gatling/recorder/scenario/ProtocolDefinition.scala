@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,20 +18,22 @@ package io.gatling.recorder.scenario
 
 import io.gatling.http.HeaderNames
 
+import io.netty.handler.codec.http.{ DefaultHttpHeaders, HttpHeaders }
+
 private[scenario] object ProtocolDefinition {
 
-  val BaseHeaders = Map(
-    HeaderNames.Accept -> "acceptHeader",
-    HeaderNames.AcceptCharset -> "acceptCharsetHeader",
-    HeaderNames.AcceptEncoding -> "acceptEncodingHeader",
-    HeaderNames.AcceptLanguage -> "acceptLanguageHeader",
-    HeaderNames.Authorization -> "authorizationHeader",
-    HeaderNames.Connection -> "connectionHeader",
-    HeaderNames.ContentType -> "contentTypeHeader",
-    HeaderNames.DNT -> "doNotTrackHeader",
-    HeaderNames.UserAgent -> "userAgentHeader",
-    HeaderNames.UpgradeInsecureRequests -> "upgradeInsecureRequestsHeader"
-  )
+  // use HttpHeaders because keys are case insensitive
+  val BaseHeadersAndProtocolMethods: HttpHeaders = new DefaultHttpHeaders(false)
+    .add(HeaderNames.Accept, "acceptHeader")
+    .add(HeaderNames.AcceptCharset, "acceptCharsetHeader")
+    .add(HeaderNames.AcceptEncoding, "acceptEncodingHeader")
+    .add(HeaderNames.AcceptLanguage, "acceptLanguageHeader")
+    .add(HeaderNames.Authorization, "authorizationHeader")
+    .add(HeaderNames.Connection, "connectionHeader")
+    .add(HeaderNames.ContentType, "contentTypeHeader")
+    .add(HeaderNames.DNT, "doNotTrackHeader")
+    .add(HeaderNames.UserAgent, "userAgentHeader")
+    .add(HeaderNames.UpgradeInsecureRequests, "upgradeInsecureRequestsHeader")
 }
 
-private[scenario] case class ProtocolDefinition(baseUrl: String, headers: Map[String, String])
+private[scenario] case class ProtocolDefinition(baseUrl: String, headers: HttpHeaders)

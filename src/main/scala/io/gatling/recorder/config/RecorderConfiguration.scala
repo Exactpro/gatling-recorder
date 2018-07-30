@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import io.gatling.commons.util.ConfigHelper.configChain
 import io.gatling.commons.util.Io._
 import io.gatling.commons.util.PathHelper._
 import io.gatling.commons.util.StringHelper.RichString
+import io.gatling.commons.util.Throwables._
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.config.GatlingFiles._
 import io.gatling.core.filter.{ BlackList, Filters, WhiteList }
@@ -78,7 +79,7 @@ private[recorder] object RecorderConfiguration extends StrictLogging {
       configuration = buildConfig(configChain(ConfigFactory.systemProperties, propertiesConfig, customConfig, defaultConfig))
     } catch {
       case NonFatal(e) =>
-        logger.warn(s"Loading configuration crashed: ${e.getMessage}. Probable cause is a format change, resetting.")
+        logger.warn(s"Loading configuration crashed: ${e.rootMessage}. Probable cause is a format change, resetting.")
         configFile.foreach(_.delete())
         configuration = buildConfig(configChain(ConfigFactory.systemProperties, propertiesConfig, defaultConfig))
     }
@@ -91,7 +92,7 @@ private[recorder] object RecorderConfiguration extends StrictLogging {
 
   def saveConfig(): Unit = {
     // Remove request bodies folder configuration (transient), keep only Gatling-related properties
-    val configToSave = configuration.config.withoutPath(ConfigKeys.core.BodiesFolder).root.withOnlyKey(ConfigKeys.ConfigRoot)
+    val configToSave = configuration.config.withoutPath(ConfigKeys.core.ResourcesFolder).root.withOnlyKey(ConfigKeys.ConfigRoot)
     configFile.foreach(file => withCloseable(createAndOpen(file).writer(gatlingConfiguration.core.charset))(_.write(configToSave.render(RenderOptions))))
   }
 
@@ -105,24 +106,24 @@ private[recorder] object RecorderConfiguration extends StrictLogging {
   private def buildConfig(config: Config): RecorderConfiguration = {
     import ConfigKeys._
 
-    def getOutputFolder(folder: String) = {
+    def getSimulationsFolder(folder: String) = {
       folder.trimToOption match {
         case Some(f)                               => f
-        case _ if sys.env.contains("GATLING_HOME") => sourcesDirectory.toFile.toString
+        case _ if sys.env.contains("GATLING_HOME") => resourcesDirectory.toFile.toString
         case _                                     => userHome
       }
     }
 
-    def getBodiesFolder =
-      if (config.hasPath(core.BodiesFolder)) config.getString(core.BodiesFolder)
-      else bodiesDirectory.toFile.toString
+    def getResourcesFolder =
+      if (config.hasPath(core.ResourcesFolder)) config.getString(core.ResourcesFolder)
+      else resourcesDirectory.toFile.toString
 
     RecorderConfiguration(
       core = CoreConfiguration(
         mode = RecorderMode(config.getString(core.Mode)),
         encoding = config.getString(core.Encoding),
-        outputFolder = getOutputFolder(config.getString(core.SimulationOutputFolder)),
-        bodiesFolder = getBodiesFolder,
+        simulationsFolder = getSimulationsFolder(config.getString(core.SimulationsFolder)),
+        resourcesFolder = getResourcesFolder,
         pkg = config.getString(core.Package),
         className = config.getString(core.ClassName),
         thresholdForPauseCreation = config.getInt(core.ThresholdForPauseCreation) milliseconds,
@@ -191,8 +192,8 @@ private[recorder] case class FiltersConfiguration(
 private[recorder] case class CoreConfiguration(
     mode:                      RecorderMode,
     encoding:                  String,
-    outputFolder:              String,
-    bodiesFolder:              String,
+    simulationsFolder:         String,
+    resourcesFolder:           String,
     pkg:                       String,
     className:                 String,
     thresholdForPauseCreation: Duration,

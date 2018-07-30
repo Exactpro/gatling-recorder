@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.io.{ FileInputStream, InputStream }
 import java.net.{ URL, URLEncoder }
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.ZonedDateTime
+import java.util.{ Base64, Locale }
 
 import scala.util.Try
 
@@ -28,11 +29,10 @@ import io.gatling.commons.util.StringHelper._
 import io.gatling.core.filter.Filters
 import io.gatling.http.HeaderNames.ContentType
 import io.gatling.http.HeaderValues.ApplicationFormUrlEncoded
-import io.gatling.recorder.har.HarParser.{ HarEntry, HarHeader, HarRequest, HarRequestPostData, HarResponse, HarResponseContent }
+import io.gatling.recorder.har.HarParser._
 import io.gatling.recorder.model._
 
-import io.netty.handler.codec.http.HttpMethod
-import org.asynchttpclient.util.Base64
+import io.netty.handler.codec.http.{ DefaultHttpHeaders, HttpHeaders, HttpMethod }
 
 case class HttpTransaction(request: HttpRequest, response: HttpResponse)
 
@@ -54,7 +54,7 @@ private[recorder] object HarReader {
     harEntries
       .iterator
       // Filter out all non-HTTP protocols (eg: ws://)
-      .filter(_.request.url.toString.toLowerCase.startsWith("http"))
+      .filter(_.request.url.toString.toLowerCase(Locale.ROOT).startsWith("http"))
       // filter out CONNECT requests if HAR was generated with a proxy such as Charles
       .filter(entry => entry.request.method != HttpMethod.CONNECT.name)
       .filter(entry => isValidURL(entry.request.url))
@@ -84,8 +84,13 @@ private[recorder] object HarReader {
     case _                       => raw
   }
 
-  private def buildHeaders(headers: Seq[HarHeader]): Map[String, String] =
-    headers.map { header => header.name -> unwrap(header.value) }.toMap
+  private def buildHeaders(harHeaders: Seq[HarHeader]): HttpHeaders = {
+    val headers = new DefaultHttpHeaders(false)
+    harHeaders.foreach { harHeader =>
+      headers.add(harHeader.name, unwrap(harHeader.value))
+    }
+    headers
+  }
 
   private def buildRequest(request: HarRequest, timestamp: Long): HttpRequest = {
 
@@ -104,14 +109,14 @@ private[recorder] object HarReader {
 
   private def encode(s: String): String = URLEncoder.encode(s, UTF_8.name)
 
-  private def buildRequestBody(postData: HarRequestPostData, requestHeaders: Map[String, String]): Option[Array[Byte]] =
+  private def buildRequestBody(postData: HarRequestPostData, requestHeaders: HttpHeaders): Option[Array[Byte]] =
     postData.text.flatMap(_.trimToOption) match {
       case Some(string) =>
         Some(string.getBytes(UTF_8))
 
       case _ =>
         // FIXME only honor params for ApplicationFormUrlEncoded for now. Charles seems utterly broken for MultipartFormData
-        if (postData.params.nonEmpty && requestHeaders.get(ContentType).exists(_.contains(ApplicationFormUrlEncoded))) {
+        if (postData.params.nonEmpty && Option(requestHeaders.get(ContentType)).exists(_.toLowerCase(Locale.ROOT).contains(ApplicationFormUrlEncoded))) {
           Some(postData.params.map(postParam => encode(postParam.name) + "=" + encode(unwrap(postParam.value))).mkString("&").getBytes(UTF_8))
 
         } else {
@@ -129,7 +134,7 @@ private[recorder] object HarReader {
       if content.comment.isEmpty // FireFox adds a localized "response body is not included" when there's no body, eg redirect.
     } yield {
       content.encoding.flatMap(_.trimToOption) match {
-        case Some("base64") => Base64.decode(text)
+        case Some("base64") => Base64.getDecoder.decode(text)
         case _              => text.getBytes(UTF_8) // FIXME we should try using charset from Content-Type
       }
     }

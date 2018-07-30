@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 
 package io.gatling.recorder.scenario.template
 
+import scala.collection.JavaConverters._
+
 import io.gatling.commons.util.StringHelper.{ EmptyFastring, Eol }
 import io.gatling.http.{ HeaderNames, HeaderValues }
 import io.gatling.recorder.config.{ FilterStrategy, RecorderConfiguration }
 import io.gatling.recorder.scenario.ProtocolDefinition
-import io.gatling.recorder.scenario.ProtocolDefinition.BaseHeaders
+import io.gatling.recorder.scenario.ProtocolDefinition.BaseHeadersAndProtocolMethods
 import io.gatling.recorder.util.HttpUtils
 
 import com.dongxiguo.fastring.Fastring.Implicits._
@@ -77,11 +79,8 @@ private[scenario] object ProtocolTemplate {
 
     def renderHeaders = {
       def renderHeader(methodName: String, headerValue: String) = fast"""$Eol$Indent.$methodName(${protectWithTripleQuotes(headerValue)})"""
-      protocol.headers.toList
-        .filter {
-          case (HeaderNames.Connection, value) => value == HeaderValues.Close
-          case _                               => true
-        }
+      protocol.headers.entries().asScala
+        .collect { case entry if !entry.getKey.equalsIgnoreCase(HeaderNames.Connection) || entry.getValue.equalsIgnoreCase(HeaderValues.Close) => entry.getKey -> entry.getValue }
         .sorted
         .flatMap {
           case (headerName, headerValue) =>
@@ -92,7 +91,7 @@ private[scenario] object ProtocolTemplate {
                 headerValue
               }
 
-            BaseHeaders.get(headerName).map(renderHeader(_, properHeaderValue))
+            Option(BaseHeadersAndProtocolMethods.get(headerName)).map(renderHeader(_, properHeaderValue))
         }.mkFastring
     }
 

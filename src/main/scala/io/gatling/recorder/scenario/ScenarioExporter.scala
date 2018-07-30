@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@ package io.gatling.recorder.scenario
 
 import java.io.{ File, IOException }
 import java.nio.file.Path
+import java.util.Locale
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.immutable.SortedMap
 
 import io.gatling.commons.util.Io._
@@ -29,9 +31,11 @@ import io.gatling.http.{ HeaderNames, HeaderValues }
 import io.gatling.recorder.config.RecorderConfiguration
 import io.gatling.recorder.har._
 import io.gatling.recorder.scenario.template.SimulationTemplate
+import io.gatling.recorder.util.HttpUtils._
 
 import com.dongxiguo.fastring.Fastring.Implicits._
 import com.typesafe.scalalogging.StrictLogging
+import io.netty.handler.codec.http.{ DefaultHttpHeaders, HttpHeaders, HttpMethod }
 
 private[recorder] object ScenarioExporter extends StrictLogging {
 
@@ -39,12 +43,12 @@ private[recorder] object ScenarioExporter extends StrictLogging {
 
   def simulationFilePath(implicit config: RecorderConfiguration): Path = {
     def getSimulationFileName: String = s"${config.core.className}.scala"
-    def getOutputFolder = {
-      val path = config.core.outputFolder + File.separator + config.core.pkg.replace(".", File.separator)
+    def getSimulationsFolder = {
+      val path = config.core.simulationsFolder + File.separator + config.core.pkg.replace(".", File.separator)
       getFolder(path)
     }
 
-    getOutputFolder / getSimulationFileName
+    getSimulationsFolder / getSimulationFileName
   }
 
   def requestBodyFileName(request: RequestElement)(implicit config: RecorderConfiguration) =
@@ -121,12 +125,12 @@ private[recorder] object ScenarioExporter extends StrictLogging {
       def generateHeaders(elements: Seq[RequestElement], headers: Map[Int, List[(String, String)]]): Map[Int, List[(String, String)]] = elements match {
         case Seq() => headers
         case element +: others =>
-          val acceptedHeaders = element.headers.toList
+          val acceptedHeaders = element.headers.entries.asScala.map(e => e.getKey -> e.getValue).toList
             .filterNot {
               case (headerName, headerValue) =>
-                val isFiltered = filteredHeaders contains headerName
-                val isAlreadyInBaseHeaders = baseHeaders.get(headerName).contains(headerValue)
-                val isPostWithFormParams = element.method == "POST" && headerValue == HeaderValues.ApplicationFormUrlEncoded
+                val isFiltered = containsIgnoreCase(filteredHeaders, headerName) || isHttp2PseudoHeader(headerName)
+                val isAlreadyInBaseHeaders = getIgnoreCase(baseHeaders, headerName).contains(headerValue)
+                val isPostWithFormParams = element.method == HttpMethod.POST.name() && headerValue.toLowerCase(Locale.ROOT).contains(HeaderValues.ApplicationFormUrlEncoded)
                 val isEmptyContentLength = headerName.equalsIgnoreCase(HeaderNames.ContentLength) && headerValue == "0"
                 isFiltered || isAlreadyInBaseHeaders || isPostWithFormParams || isEmptyContentLength
             }
@@ -139,7 +143,7 @@ private[recorder] object ScenarioExporter extends StrictLogging {
           } else {
             val headersSeq = headers.toSeq
             headersSeq.indexWhere {
-              case (id, existingHeaders) => existingHeaders == acceptedHeaders
+              case (_, existingHeaders) => existingHeaders == acceptedHeaders
             } match {
               case -1 =>
                 element.filteredHeadersId = Some(element.id)
@@ -161,12 +165,10 @@ private[recorder] object ScenarioExporter extends StrictLogging {
     SimulationTemplate.render(config.core.pkg, config.core.className, protocolConfigElement, headers, config.core.className, newScenarioElements)
   }
 
-  private def getBaseHeaders(requestElements: Seq[RequestElement]): Map[String, String] = {
+  private def getBaseHeaders(requestElements: Seq[RequestElement]): HttpHeaders = {
 
     def getMostFrequentHeaderValue(headerName: String): Option[String] = {
-      val headers = requestElements.flatMap {
-        _.headers.collect { case (`headerName`, value) => value }
-      }
+      val headers = requestElements.flatMap(_.headers.getAll(headerName).asScala)
 
       if (headers.isEmpty || headers.length != requestElements.length)
         // a header has to be defined on all requestElements to be turned into a common one
@@ -178,18 +180,15 @@ private[recorder] object ScenarioExporter extends StrictLogging {
       }
     }
 
-    def addHeader(appendTo: Map[String, String], headerName: String): Map[String, String] =
-      getMostFrequentHeaderValue(headerName)
-        .map(headerValue => appendTo + (headerName -> headerValue))
-        .getOrElse(appendTo)
-
-    @tailrec
-    def resolveBaseHeaders(headers: Map[String, String], headerNames: List[String]): Map[String, String] = headerNames match {
-      case Nil                  => headers
-      case headerName :: others => resolveBaseHeaders(addHeader(headers, headerName), others)
+    val baseHeaders = new DefaultHttpHeaders(false)
+    ProtocolDefinition.BaseHeadersAndProtocolMethods.names().asScala.foreach { headerName =>
+      getMostFrequentHeaderValue(headerName) match {
+        case Some(mostFrequentValue) => baseHeaders.add(headerName, mostFrequentValue)
+        case _                       =>
+      }
     }
 
-    resolveBaseHeaders(Map.empty, ProtocolDefinition.BaseHeaders.keySet.toList)
+    baseHeaders
   }
 
   private def getBaseUrl(requestElements: Seq[RequestElement]): String = {
@@ -205,7 +204,7 @@ private[recorder] object ScenarioExporter extends StrictLogging {
       Left(scenarioElements)
 
   private def dumpBody(fileName: String, content: Array[Byte])(implicit config: RecorderConfiguration): Unit = {
-    withCloseable((getFolder(config.core.bodiesFolder) / fileName).outputStream) { fw =>
+    withCloseable((getFolder(config.core.resourcesFolder) / fileName).outputStream) { fw =>
       try {
         fw.write(content)
       } catch {

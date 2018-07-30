@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ object HarParser {
 
   case class HarHeader(name: String, value: String)
 
-  case class HarRequestPostData(mimeType: String, text: Option[String], params: Seq[HarRequestPostParam])
+  case class HarRequestPostData(text: Option[String], params: Seq[HarRequestPostParam])
 
   case class HarRequestPostParam(name: String, value: String)
 

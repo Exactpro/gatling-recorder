@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,15 @@ package io.gatling.recorder.http
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.collection.JavaConverters._
-
+import io.gatling.http.client.ahc.uri.Uri
+import io.gatling.netty.util.ahc.ByteBufUtils
 import io.gatling.recorder.controller.RecorderController
 import io.gatling.recorder.http.flows.Remote
 import io.gatling.recorder.model._
 
 import com.typesafe.scalalogging.StrictLogging
 import io.netty.channel.ChannelId
-import io.netty.handler.codec.http.{ FullHttpRequest, FullHttpResponse, HttpMethod }
-import org.asynchttpclient.netty.util.ByteBufUtils
-import org.asynchttpclient.uri.Uri
+import io.netty.handler.codec.http.{ DefaultHttpHeaders, FullHttpRequest, FullHttpResponse, HttpMethod }
 
 class TrafficLogger(controller: RecorderController) extends StrictLogging {
 
@@ -54,7 +52,7 @@ class TrafficLogger(controller: RecorderController) extends StrictLogging {
         httpVersion = protocolVersion.text,
         method = method.name,
         uri = remote.makeAbsoluteUri(uri, https),
-        headers = (headers.asScala ++ trailingHeaders.asScala).map(entry => entry.getKey -> entry.getValue).toMap,
+        headers = new DefaultHttpHeaders().add(headers).add(trailingHeaders),
         body = ByteBufUtils.byteBuf2Bytes(content),
         timestamp = sendTimestamp
       )
@@ -70,7 +68,7 @@ class TrafficLogger(controller: RecorderController) extends StrictLogging {
       val responseEvent = HttpResponse(
         status = status.code,
         statusText = status.reasonPhrase,
-        headers = (headers.asScala ++ trailingHeaders.asScala).map(entry => entry.getKey -> entry.getValue).toMap,
+        headers = new DefaultHttpHeaders().add(headers).add(trailingHeaders),
         body = ByteBufUtils.byteBuf2Bytes(content),
         timestamp = receiveTimestamp
       )

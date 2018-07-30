@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package io.gatling.recorder.http
 
-import io.gatling.commons.util.ClockSingleton.nowMillis
+import io.gatling.commons.util.Clock
 import io.gatling.recorder.http.flows.MitmMessage.{ ClientChannelException, ClientChannelInactive, ResponseReceived }
 
 import akka.actor.ActorRef
@@ -24,10 +24,10 @@ import com.typesafe.scalalogging.StrictLogging
 import io.netty.channel.{ ChannelHandlerContext, ChannelId, ChannelInboundHandlerAdapter }
 import io.netty.handler.codec.http.FullHttpResponse
 
-class ClientHandler(mitmActor: ActorRef, serverChannelId: ChannelId, trafficLogger: TrafficLogger) extends ChannelInboundHandlerAdapter with StrictLogging {
+class ClientHandler(mitmActor: ActorRef, serverChannelId: ChannelId, trafficLogger: TrafficLogger, clock: Clock) extends ChannelInboundHandlerAdapter with StrictLogging {
 
   override def channelRead(ctx: ChannelHandlerContext, msg: AnyRef): Unit = {
-    val receiveTimestamp = nowMillis
+    val receiveTimestamp = clock.nowMillis
     msg match {
       case response: FullHttpResponse =>
         trafficLogger.logResponse(serverChannelId, response, receiveTimestamp)

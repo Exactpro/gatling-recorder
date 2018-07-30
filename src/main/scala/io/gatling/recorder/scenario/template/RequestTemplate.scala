@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 package io.gatling.recorder.scenario.template
 
+import java.util.Locale
+
 import io.gatling.commons.util.StringHelper.EmptyFastring
-import io.gatling.http.util.HttpHelper.OkCodes
+import io.gatling.http.util.HttpHelper
 import io.gatling.recorder.config.RecorderConfiguration
 import io.gatling.recorder.scenario.{ RequestBodyBytes, RequestBodyParams }
 import io.gatling.recorder.scenario.{ RequestElement, ScenarioExporter }
@@ -34,7 +36,7 @@ private[scenario] object RequestTemplate {
   def renderRequest(simulationClass: String, request: RequestElement, extractedUri: ExtractedUris)(implicit config: RecorderConfiguration): Fastring = {
     def renderMethod: Fastring =
       if (BuiltInHttpMethods.contains(request.method)) {
-        fast"${request.method.toLowerCase}($renderUrl)"
+        fast"${request.method.toLowerCase(Locale.ROOT)}($renderUrl)"
       } else {
         fast"""httpRequest("${request.method}", $renderUrl)"""
       }
@@ -73,7 +75,7 @@ private[scenario] object RequestTemplate {
     }.getOrElse("")
 
     def renderStatusCheck: Fastring =
-      if (!OkCodes.contains(request.statusCode))
+      if (!HttpHelper.isOk(request.statusCode))
         fast"""
 			.check(status.is(${request.statusCode}))"""
       else

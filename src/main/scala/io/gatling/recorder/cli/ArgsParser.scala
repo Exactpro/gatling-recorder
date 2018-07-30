@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,15 +49,15 @@ private[recorder] class ArgsParser(args: Array[String]) {
       .valueName("<port>")
       .text("Outgoing proxy port for HTTPS")
 
-    opt[String](OutputFolder)
-      .foreach(props.simulationOutputFolder)
+    opt[String](SimulationsFolder)
+      .foreach(props.simulationsFolder)
       .valueName("<folderName>")
       .text("Uses <folderName> as the folder where generated simulations will be stored")
 
-    opt[String](BodiesFolder)
-      .foreach(props.bodiesFolder)
+    opt[String](ResourcesFolder)
+      .foreach(props.resourcesFolder)
       .valueName("<folderName>")
-      .text("Uses <folderName> as the folder where bodies are stored")
+      .text("Uses <folderName> as the folder where generated resources will be stored")
 
     opt[String](ClassName)
       .foreach(props.simulationClassName)

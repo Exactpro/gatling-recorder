@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import io.gatling.recorder.util.collection.RichSeq
 
 import com.softwaremill.quicklens._
 import com.typesafe.scalalogging.StrictLogging
+import io.netty.handler.codec.http.HttpResponseStatus
 
 private[recorder] case class ScenarioDefinition(elements: Seq[ScenarioElement]) {
   def isEmpty: Boolean = elements.isEmpty
@@ -33,7 +34,7 @@ private[recorder] object ScenarioDefinition extends StrictLogging {
 
   private val ConsecutiveResourcesMaxIntervalInMillis = 1000
 
-  private def isRedirection(t: TimedScenarioElement[RequestElement]) = HttpHelper.isRedirect(t.element.statusCode)
+  private def isRedirection(t: TimedScenarioElement[RequestElement]) = HttpHelper.isRedirect(HttpResponseStatus.valueOf(t.element.statusCode))
 
   private def filterRedirection(requests: Seq[TimedScenarioElement[RequestElement]]): List[TimedScenarioElement[RequestElement]] = {
     val groupedRequests = requests.groupAsLongAs(isRedirection)

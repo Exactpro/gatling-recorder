@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.awt.Color
 import scala.swing.{ Component, Dimension, ScrollPane, Table }
 import scala.swing.event.{ MouseButtonEvent, MouseEvent }
 import scala.util.{ Failure, Try }
+
+import io.gatling.commons.util.Throwables._
 
 import javax.swing.{ JMenuItem, JPopupMenu }
 import javax.swing.table.DefaultTableModel
@@ -58,7 +60,7 @@ private[swing] class FilterTable(headerTitle: String) extends ScrollPane {
     getRegexs
       .map { str => (str, Try(str.r)) }
       .collect {
-        case (str, fail: Failure[_]) => s"$str is not a valid regular expression: ${fail.exception.getMessage}"
+        case (str, fail: Failure[_]) => s"$str is not a valid regular expression: ${fail.exception.rootMessage}"
       }
 
   def removeRows(toRemove: Seq[Int]): Unit = {

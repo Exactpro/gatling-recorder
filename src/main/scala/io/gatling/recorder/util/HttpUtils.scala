@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 GatlingCorp (http://gatling.io)
+ * Copyright 2011-2018 GatlingCorp (http://gatling.io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@ package io.gatling.recorder.util
 
 import java.util.Locale
 
+import scala.collection.JavaConverters._
+
 import io.netty.handler.codec.http.HttpHeaderValues._
+import io.netty.handler.codec.http.HttpHeaders
 
 object HttpUtils {
   val SupportedEncodings = Set(GZIP.toString, DEFLATE.toString)
@@ -28,4 +31,12 @@ object HttpUtils {
       .split(",")
       .filter(encoding => SupportedEncodings.contains(encoding.trim.toLowerCase(Locale.US)))
       .mkString(",")
+
+  def containsIgnoreCase(headers: Iterable[String], header: String): Boolean =
+    headers.exists(_.equalsIgnoreCase(header))
+
+  def getIgnoreCase(httpHeaders: HttpHeaders, header: String): Option[String] =
+    httpHeaders.asScala.find(_.getKey.equalsIgnoreCase(header)).map(_.getValue)
+
+  def isHttp2PseudoHeader(header: String): Boolean = header.startsWith(":")
 }
